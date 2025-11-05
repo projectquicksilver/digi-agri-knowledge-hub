@@ -630,51 +630,59 @@
         }
 
         function populateFilterOptions() {
+            // Initial population with all products
+            updateFilterOptions(allProducts);
+        }
+
+        function updateFilterOptions(productsToFilter) {
+            // Get current selections
+            const currentCompany = document.getElementById('company-filter').value;
+            const currentType = document.getElementById('type-filter').value;
+            const currentCrop = document.getElementById('crop-filter').value;
+            const currentSeason = document.getElementById('season-filter').value;
+            const currentProduct = document.getElementById('product-name-filter').value;
+            const currentBrand = document.getElementById('brand-name-filter').value;
+            const currentSidebarCrop = document.getElementById('crops-filter').value;
+            const currentSidebarType = document.getElementById('sidebar-type-filter').value;
+
             // Companies
-            const companies = [...new Set(allProducts.map(p => p.company))].sort();
-            const companyFilter = document.getElementById('company-filter');
-            companyFilter.innerHTML = '<option value="all">All Companies</option>';
-            companies.forEach(company => {
-                companyFilter.innerHTML += `<option value="${company}">${company}</option>`;
-            });
+            const companies = [...new Set(productsToFilter.map(p => p.company))].sort();
+            updateSelectOptions('company-filter', companies, currentCompany, 'All Companies');
 
             // Product Types
-            const types = [...new Set(allProducts.map(p => p.type))].filter(t => t).sort();
-            const typeFilter = document.getElementById('type-filter');
-            const sidebarTypeFilter = document.getElementById('sidebar-type-filter');
-            
-            const typeOptions = types.map(type => `<option value="${type}">${type}</option>`).join('');
-            
-            typeFilter.innerHTML = '<option value="all">All Product Types</option>' + typeOptions;
-            sidebarTypeFilter.innerHTML = '<option value="all">All types</option>' + typeOptions;
+            const types = [...new Set(productsToFilter.map(p => p.type))].filter(t => t).sort();
+            updateSelectOptions('type-filter', types, currentType, 'All Product Types');
+            updateSelectOptions('sidebar-type-filter', types, currentSidebarType, 'All types');
 
             // Crops - Extract all unique crops
             const allCrops = new Set();
-            allProducts.forEach(p => {
+            productsToFilter.forEach(p => {
                 p.suitableCrops.forEach(crop => {
                     if (crop) allCrops.add(crop);
                 });
             });
             const cropsArray = [...allCrops].sort();
-            
-            const cropFilter = document.getElementById('crop-filter');
-            const cropsFilter = document.getElementById('crops-filter');
-            const cropOptions = cropsArray.map(crop => `<option value="${crop}">${crop}</option>`).join('');
-            
-            cropFilter.innerHTML = '<option value="all">All Crops</option>' + cropOptions;
-            cropsFilter.innerHTML = '<option value="all">All Crops</option>' + cropOptions;
+            updateSelectOptions('crop-filter', cropsArray, currentCrop, 'All Crops');
+            updateSelectOptions('crops-filter', cropsArray, currentSidebarCrop, 'All Crops');
 
             // Product Names
-            const productNames = [...new Set(allProducts.map(p => p.name))].sort();
-            const productNameFilter = document.getElementById('product-name-filter');
-            productNameFilter.innerHTML = '<option value="all">All Products</option>' + 
-                productNames.map(name => `<option value="${name}">${name}</option>`).join('');
+            const productNames = [...new Set(productsToFilter.map(p => p.name))].sort();
+            updateSelectOptions('product-name-filter', productNames, currentProduct, 'All Products');
 
             // Brand Names
-            const brandNames = [...new Set(allProducts.map(p => p.brandName).filter(b => b))].sort();
-            const brandNameFilter = document.getElementById('brand-name-filter');
-            brandNameFilter.innerHTML = '<option value="all">All Brands</option>' + 
-                brandNames.map(brand => `<option value="${brand}">${brand}</option>`).join('');
+            const brandNames = [...new Set(productsToFilter.map(p => p.brandName).filter(b => b))].sort();
+            updateSelectOptions('brand-name-filter', brandNames, currentBrand, 'All Brands');
+        }
+
+        function updateSelectOptions(elementId, options, currentValue, allLabel) {
+            const select = document.getElementById(elementId);
+            const valueExists = options.includes(currentValue);
+            
+            select.innerHTML = `<option value="all">${allLabel}</option>` + 
+                options.map(option => `<option value="${option}">${option}</option>`).join('');
+            
+            // Restore previous selection if it still exists, otherwise set to 'all'
+            select.value = valueExists ? currentValue : 'all';
         }
 
         function updateStats() {
@@ -695,6 +703,7 @@
             const seasonFilter = document.getElementById('season-filter').value;
             const organicFilter = document.getElementById('organic-filter').checked;
 
+            // Step 1: Filter products based on current selections
             filteredProducts = allProducts.filter(product => {
                 // Universal search
                 const matchesUniversalSearch = universalSearch === '' || 
@@ -721,6 +730,11 @@
                        matchesSeason && matchesOrganic;
             });
 
+            // Step 2: Update filter options based on filtered results
+            // This creates the interconnected behavior
+            updateFilterOptions(filteredProducts);
+
+            // Step 3: Display filtered products
             displayProducts();
         }
 
