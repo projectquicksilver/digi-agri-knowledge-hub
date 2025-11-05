@@ -1117,17 +1117,7 @@
                         </div>` : ''}
 
                     <div class="flex gap-3 pt-6 border-t border-gray-200">
-                        ${product.sourceUrl && product.sourceUrl.startsWith('http') ? 
-                            `<a href="${product.sourceUrl}" 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               class="flex-1 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-bold text-center flex items-center justify-center gap-2 text-sm shadow-lg">
-                                View Full Details
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                </svg>
-                            </a>` : ''}
-                        <button onclick="closeProductModal()" class="px-5 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all font-bold text-sm">
+                        <button onclick="closeProductModal()" class="w-full px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-bold text-sm shadow-lg">
                             Close
                         </button>
                     </div>
