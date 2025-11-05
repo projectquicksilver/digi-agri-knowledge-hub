@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriCatalog - Agricultural Product Directory</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- XLSX Library for Excel Reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom Styles -->
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .line-clamp-2 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+        
+        .line-clamp-3 {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #16a34a;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #22c55e;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .product-card {
+            transition: all 0.3s ease;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .img-loading {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="bg-white bg-opacity-20 p-3 rounded-lg backdrop-blur-sm">
+                    <i data-lucide="leaf" class="w-10 h-10"></i>
+                </div>
+                <div>
+                    <h1 class="text-4xl md:text-5xl font-bold">AgriCatalog</h1>
+                    <p class="text-green-100 text-lg mt-1">Agricultural Product Directory</p>
+                </div>
+            </div>
+            <p class="text-lg text-green-50 max-w-3xl">
+                Discover agricultural products, fertilizers, and farming solutions. Browse our comprehensive catalog with advanced filtering and search capabilities.
+            </p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-20">
+            <div class="spinner mx-auto mb-6"></div>
+            <p class="text-gray-600 text-lg font-medium">Loading products from database...</p>
+            <p class="text-gray-500 text-sm mt-2">Please wait while we fetch your agricultural products</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden mb-8">
+            <div class="bg-red-50 border-2 border-red-200 rounded-xl p-8 text-center fade-in">
+                <div class="text-red-600 mb-4">
+                    <i data-lucide="alert-circle" class="w-16 h-16 mx-auto"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-red-900 mb-2">Failed to Load Products</h3>
+                <p id="error-message" class="text-red-700 mb-6"></p>
+                <div class="flex gap-4 justify-center flex-wrap">
+                    <button onclick="loadExcelData()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        Retry Loading
+                    </button>
+                    <label for="excel-upload" class="cursor-pointer px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 border border-gray-300">
+                        <i data-lucide="upload" class="w-5 h-5"></i>
+                        Upload Local File
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <div id="products-section" class="hidden">
+            
+            <!-- Title Bar -->
+            <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900">Product Catalog</h2>
+                    <p class="text-gray-600 mt-1">
+                        <span id="filtered-count">0</span> of <span id="total-count">0</span> products
+                    </p>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="loadExcelData()" class="px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 border border-gray-300">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        Refresh
+                    </button>
+                    <label for="excel-upload" class="cursor-pointer px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 border border-gray-300">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        Upload
+                    </label>
+                    <input type="file" id="excel-upload" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(event)">
+                    
+                    <button id="grid-view-btn" onclick="setViewMode('grid')" class="p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <i data-lucide="grid-3x3" class="w-5 h-5"></i>
+                    </button>
+                    <button id="list-view-btn" onclick="setViewMode('list')" class="p-3 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition-colors border border-gray-300">
+                        <i data-lucide="list" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters Bar -->
+            <div class="flex gap-4 mb-8 flex-wrap">
+                <div class="flex items-center gap-2">
+                    <span class="text-gray-700 font-medium">View:</span>
+                    <select id="company-filter" onchange="applyFilters()" class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        <option value="all">All Companies</option>
+                    </select>
+                </div>
+                <select id="type-filter" onchange="applyFilters()" class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    <option value="all">All Product Types</option>
+                </select>
+            </div>
+
+            <div class="flex gap-6 flex-col lg:flex-row">
+                
+                <!-- Sidebar Filters -->
+                <div class="w-full lg:w-80 flex-shrink-0">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:sticky lg:top-4">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="filter" class="w-5 h-5 text-gray-600"></i>
+                                <h3 class="text-lg font-semibold text-gray-900">Filters</h3>
+                            </div>
+                            <button onclick="clearFilters()" class="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                                Clear
+                            </button>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-900 mb-2">
+                                    Product Name
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                                    <input type="text" id="product-name-filter" placeholder="Search products..." onkeyup="applyFilters()" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-900 mb-2">
+                                    Brand Name
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                                    <input type="text" id="brand-name-filter" placeholder="Search brands..." onkeyup="applyFilters()" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-900 mb-2">
+                                    Suitable Crops
+                                </label>
+                                <div class="relative">
+                                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"></i>
+                                    <input type="text" id="crops-filter" placeholder="Search crops..." onkeyup="applyFilters()" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-900 mb-2">
+                                    Product Type
+                                </label>
+                                <select id="sidebar-type-filter" onchange="applyFilters()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                    <option value="all">All types</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-900 mb-2">
+                                    Season
+                                </label>
+                                <select id="season-filter" onchange="applyFilters()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                    <option value="all">All Seasons</option>
+                                    <option value="Kharif">Kharif</option>
+                                    <option value="Rabi">Rabi</option>
+                                    <option value="Zaid">Zaid</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="checkbox" id="organic-filter" onchange="applyFilters()" class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 cursor-pointer">
+                                    <span class="text-sm font-semibold text-gray-900 group-hover:text-green-600 transition-colors">Organic/Certified Only</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Grid/List -->
+                <div class="flex-1">
+                    <!-- No Results -->
+                    <div id="no-results" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+                        <i data-lucide="search" class="w-16 h-16 text-gray-300 mx-auto mb-4"></i>
+                        <p class="text-gray-600 text-lg mb-4">No products found matching your filters.</p>
+                        <button onclick="clearFilters()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            Clear All Filters
+                        </button>
+                    </div>
+
+                    <!-- Products Container -->
+                    <div id="products-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Products will be inserted here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-center md:text-left">
+                    <p class="text-lg font-semibold flex items-center gap-2 justify-center md:justify-start">
+                        <i data-lucide="leaf" class="w-5 h-5"></i>
+                        AgriCatalog
+                    </p>
+                    <p class="text-gray-400 text-sm mt-1">Agricultural Product Directory</p>
+                </div>
+                <div class="text-gray-400 text-sm text-center md:text-right">
+                    <p>&copy; 2024 AgriCatalog. All rights reserved.</p>
+                    <p class="mt-1">Powered by modern web technologies</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script>
+        let allProducts = [];
+        let filteredProducts = [];
+        let currentViewMode = 'grid';
+        const EXCEL_FILE_URL = './agrihubdb.xlsx';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadExcelData();
+            lucide.createIcons();
+        });
+
+        async function loadExcelData() {
+            showLoading();
+            hideError();
+            hideProducts();
+
+            try {
+                const response = await fetch(EXCEL_FILE_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch Excel file: ${response.statusText}`);
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
+                parseExcelData(data);
+            } catch (err) {
+                console.error('Error loading Excel file:', err);
+                showError(err.message || 'Failed to load product data. Please ensure agrihubdb.xlsx is in the same folder as this HTML file.');
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showLoading();
+            hideError();
+            hideProducts();
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    parseExcelData(data);
+                } catch (error) {
+                    showError('Error reading Excel file. Please ensure it has the correct format.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseExcelData(data) {
+            try {
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                allProducts = jsonData.map((row, index) => ({
+                    id: index + 1,
+                    sno: row['S.No'] || index + 1,
+                    company: row['Company Name'] || 'N/A',
+                    name: row['Product Name'] || 'Unnamed Product',
+                    brandName: row['Brand Name'] || '',
+                    description: row['Description of the Product'] || 'No description available',
+                    type: row['Product Type'] || 'Other',
+                    subType: row['Sub-Type'] || '',
+                    appliedSeasons: row['Applied Seasons'] || '',
+                    suitableCrops: row['Suitable Crops'] ? row['Suitable Crops'].split(',').map(c => c.trim()) : [],
+                    benefits: row['Benefits'] || '',
+                    dosage: row['Dosage (Unit/acre)'] || 'Not Available',
+                    applicationMethod: row['Application Method'] || '',
+                    packSizes: row['Pack Sizes'] || '',
+                    priceRange: row['Price Range'] || 'Not Available',
+                    availableIn: row['Available In (States)'] || '',
+                    organic: row['Organic/Certified'] === 'Yes' || row['Organic/Certified'] === 'yes',
+                    imageLink: row['Product Image Link'] || '',
+                    sourceUrl: row['Source URL'] || '',
+                    notes: row['Notes'] || ''
+                }));
+
+                console.log(`✅ Loaded ${allProducts.length} products successfully`);
+                
+                populateFilterOptions();
+                applyFilters();
+                hideLoading();
+                showProducts();
+                
+            } catch (error) {
+                console.error('Error parsing Excel data:', error);
+                showError('Failed to parse Excel file. Please check the file format.');
+            }
+        }
+
+        function populateFilterOptions() {
+            const companies = [...new Set(allProducts.map(p => p.company))].sort();
+            const companyFilter = document.getElementById('company-filter');
+            companyFilter.innerHTML = '<option value="all">All Companies</option>';
+            companies.forEach(company => {
+                companyFilter.innerHTML += `<option value="${company}">${company}</option>`;
+            });
+
+            const types = [...new Set(allProducts.map(p => p.type))].filter(t => t).sort();
+            const typeFilter = document.getElementById('type-filter');
+            const sidebarTypeFilter = document.getElementById('sidebar-type-filter');
+            
+            const typeOptions = '<option value="all">All Product Types</option>' + 
+                types.map(type => `<option value="${type}">${type}</option>`).join('');
+            
+            typeFilter.innerHTML = typeOptions;
+            sidebarTypeFilter.innerHTML = '<option value="all">All types</option>' + 
+                types.map(type => `<option value="${type}">${type}</option>`).join('');
+        }
+
+        function applyFilters() {
+            const productNameFilter = document.getElementById('product-name-filter').value.toLowerCase();
+            const brandNameFilter = document.getElementById('brand-name-filter').value.toLowerCase();
+            const cropsFilter = document.getElementById('crops-filter').value.toLowerCase();
+            const companyFilter = document.getElementById('company-filter').value;
+            const typeFilter = document.getElementById('type-filter').value;
+            const sidebarTypeFilter = document.getElementById('sidebar-type-filter').value;
+            const seasonFilter = document.getElementById('season-filter').value;
+            const organicFilter = document.getElementById('organic-filter').checked;
+
+            filteredProducts = allProducts.filter(product => {
+                const matchesProductName = product.name.toLowerCase().includes(productNameFilter);
+                const matchesBrandName = (product.brandName || '').toLowerCase().includes(brandNameFilter);
+                const matchesCrops = cropsFilter === '' || product.suitableCrops.some(crop => 
+                    crop.toLowerCase().includes(cropsFilter)
+                );
+                const matchesCompany = companyFilter === 'all' || product.company === companyFilter;
+                const matchesType = (typeFilter === 'all' && sidebarTypeFilter === 'all') || 
+                                   product.type === typeFilter || 
+                                   product.type === sidebarTypeFilter;
+                const matchesSeason = seasonFilter === 'all' || 
+                                     (product.appliedSeasons && product.appliedSeasons.includes(seasonFilter));
+                const matchesOrganic = !organicFilter || product.organic;
+
+                return matchesProductName && matchesBrandName && matchesCrops && 
+                       matchesCompany && matchesType && matchesSeason && matchesOrganic;
+            });
+
+            displayProducts();
+        }
+
+        function clearFilters() {
+            document.getElementById('product-name-filter').value = '';
+            document.getElementById('brand-name-filter').value = '';
+            document.getElementById('crops-filter').value = '';
+            document.getElementById('company-filter').value = 'all';
+            document.getElementById('type-filter').value = 'all';
+            document.getElementById('sidebar-type-filter').value = 'all';
+            document.getElementById('season-filter').value = 'all';
+            document.getElementById('organic-filter').checked = false;
+            applyFilters();
+        }
+
+        function setViewMode(mode) {
+            currentViewMode = mode;
+            const gridBtn = document.getElementById('grid-view-btn');
+            const listBtn = document.getElementById('list-view-btn');
+            const container = document.getElementById('products-container');
+
+            if (mode === 'grid') {
+                gridBtn.className = 'p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors';
+                listBtn.className = 'p-3 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition-colors border border-gray-300';
+                container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+            } else {
+                gridBtn.className = 'p-3 bg-white text-gray-600 rounded-lg hover:bg-gray-100 transition-colors border border-gray-300';
+                listBtn.className = 'p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors';
+                container.className = 'space-y-4';
+            }
+
+            displayProducts();
+            lucide.createIcons();
+        }
+
+        function displayProducts() {
+            const container = document.getElementById('products-container');
+            const noResults = document.getElementById('no-results');
+            
+            document.getElementById('filtered-count').textContent = filteredProducts.length;
+            document.getElementById('total-count').textContent = allProducts.length;
+
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noResults.classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            noResults.classList.add('hidden');
+            container.innerHTML = filteredProducts.map(product => createProductCard(product)).join('');
+            lucide.createIcons();
+        }
+
+        function createProductCard(product) {
+            const isListView = currentViewMode === 'list';
+            
+            return `
+                <div class="product-card bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl transition-all ${isListView ? 'flex flex-col sm:flex-row' : ''} fade-in">
+                    <div class="${isListView ? 'w-full sm:w-48 h-48 sm:h-auto flex-shrink-0' : 'h-48'} bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
+                        ${product.imageLink && product.imageLink !== 'Not Available' && product.imageLink.startsWith('http') ? 
+                            `<img src="${product.imageLink}" 
+                                  alt="${product.name}" 
+                                  class="w-full h-full object-cover img-loading"
+                                  onerror="this.parentElement.innerHTML='<div class=\\'text-gray-400 text-sm p-4 text-center flex flex-col items-center gap-2\\'><i data-lucide=\\'image-off\\' class=\\'w-8 h-8\\'></i><span>No Image</span></div>'; lucide.createIcons();"
+                                  onload="this.classList.remove('img-loading')">` 
+                            : 
+                            `<div class="text-gray-400 text-sm flex flex-col items-center gap-2">
+                                <i data-lucide="image-off" class="w-12 h-12"></i>
+                                <span>No Image</span>
+                            </div>`
+                        }
+                    </div>
+                    
+                    <div class="p-6 flex-1">
+                        <div class="flex items-start justify-between mb-2">
+                            <p class="text-sm text-gray-600 font-medium">${product.company}</p>
+                            ${product.organic ? '<span class="px-2 py-1 bg-green-600 text-white text-xs rounded-full font-medium">✓ Organic</span>' : ''}
+                        </div>
+                        
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2 hover:text-green-600 transition-colors">${product.name}</h3>
+                        
+                        ${product.brandName ? `<p class="text-green-600 font-medium mb-3">${product.brandName}</p>` : ''}
+                        
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            ${product.type ? `<span class="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full font-medium">${product.type}</span>` : ''}
+                            ${product.subType ? `<span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded-full font-medium">${product.subType}</span>` : ''}
+                            ${product.appliedSeasons ? `<span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-sm rounded-full font-medium">${product.appliedSeasons}</span>` : ''}
+                        </div>
+
+                        ${product.description && product.description !== 'No description available' ? 
+                            `<p class="text-gray-600 text-sm mb-4 line-clamp-3">${product.description}</p>` : ''}
+
+                        <div class="space-y-2 text-sm">
+                            ${product.suitableCrops && product.suitableCrops.length > 0 && product.suitableCrops[0] !== '' ? 
+                                `<div class="flex gap-2">
+                                    <span class="font-semibold text-gray-900 flex-shrink-0 flex items-center gap-1">
+                                        <i data-lucide="sprout" class="w-4 h-4"></i> Crops:
+                                    </span>
+                                    <p class="text-gray-700">${product.suitableCrops.join(', ')}</p>
+                                </div>` : ''}
+                            
+                            ${product.dosage && product.dosage !== 'Not Available' ? 
+                                `<div class="flex gap-2">
+                                    <span class="font-semibold text-gray-900 flex-shrink-0 flex items-center gap-1">
+                                        <i data-lucide="droplet" class="w-4 h-4"></i> Dosage:
+                                    </span>
+                                    <p class="text-gray-700">${product.dosage}</p>
+                                </div>` : ''}
+                            
+                            ${product.applicationMethod ? 
+                                `<div class="flex gap-2">
+                                    <span class="font-semibold text-gray-900 flex-shrink-0 flex items-center gap-1">
+                                        <i data-lucide="hand" class="w-4 h-4"></i> Application:
+                                    </span>
+                                    <p class="text-gray-700">${product.applicationMethod}</p>
+                                </div>` : ''}
+                            
+                            ${product.benefits ? 
+                                `<div class="flex gap-2">
+                                    <span class="font-semibold text-gray-900 flex-shrink-0 flex items-center gap-1">
+                                        <i data-lucide="check-circle" class="w-4 h-4"></i> Benefits:
+                                    </span>
+                                    <p class="text-gray-700 line-clamp-2">${product.benefits}</p>
+                                </div>` : ''}
+
+                            ${product.priceRange && product.priceRange !== 'Not Available' ? 
+                                `<div class="flex gap-2">
+                                    <span class="font-semibold text-gray-900 flex-shrink-0 flex items-center gap-1">
+                                        <i data-lucide="tag" class="w-4 h-4"></i> Price:
+                                    </span>
+                                    <p class="text-gray-700">${product.priceRange}</p>
+                                </div>` : ''}
+
+                            ${product.availableIn ? 
+                                `<div class="flex gap-2">
+                                    <span class="font-semibold text-gray-900 flex-shrink-0 flex items-center gap-1">
+                                        <i data-lucide="map-pin" class="w-4 h-4"></i> States:
+                                    </span>
+                                    <p class="text-gray-700">${product.availableIn}</p>
+                                </div>` : ''}
+
+                            ${product.sourceUrl && product.sourceUrl.startsWith('http') ? 
+                                `<div class="pt-3 mt-3 border-t border-gray-200">
+                                    <a href="${product.sourceUrl}" 
+                                       target="_blank" 
+                                       rel="noopener noreferrer"
+                                       class="text-green-600 hover:text-green-700 font-medium inline-flex items-center gap-1 hover:underline transition-colors">
+                                        View Full Details
+                                        <i data-lucide="external-link" class="w-4 h-4"></i>
+                                    </a>
+                                </div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function hideError() {
+            document.getElementById('error').classList.add('hidden');
+        }
+
+        function showProducts() {
+            document.getElementById('products-section').classList.remove('hidden');
+        }
+
+        function hideProducts() {
+            document.getElementById('products-section').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
