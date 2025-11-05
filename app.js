@@ -14,8 +14,12 @@ window.addEventListener('load', function() {
 });
 
 function initializeApp() {
+    // Initialize theme
+    initializeTheme();
+    
     // Set up event listeners
     document.getElementById('retry-btn').addEventListener('click', loadExcelData);
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     
     document.getElementById('clear-all-filters-btn').addEventListener('click', clearFilters);
     document.getElementById('clear-filters-btn-2').addEventListener('click', clearFilters);
@@ -676,4 +680,26 @@ function showProducts() {
 
 function hideProducts() {
     document.getElementById('products-section').classList.add('hidden');
+}
+
+// Theme Management Functions
+function initializeTheme() {
+    // Check for saved theme preference or default to light mode
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Add a small animation effect
+    const button = document.getElementById('theme-toggle');
+    button.style.transform = 'rotate(360deg)';
+    setTimeout(() => {
+        button.style.transform = 'rotate(0deg)';
+    }, 300);
 }
