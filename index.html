@@ -294,7 +294,7 @@
                     </div>
                     
                     <!-- Quick Stats -->
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-8">
+                    <div class="grid grid-cols-2 gap-4 mt-8">
                         <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
                             <p class="text-green-100 text-sm font-medium mb-1">Total Products</p>
                             <p class="text-2xl font-bold" id="stat-total">0</p>
@@ -302,10 +302,6 @@
                         <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
                             <p class="text-green-100 text-sm font-medium mb-1">Companies</p>
                             <p class="text-2xl font-bold" id="stat-companies">0</p>
-                        </div>
-                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20 col-span-2 md:col-span-1">
-                            <p class="text-green-100 text-sm font-medium mb-1">Organic Products</p>
-                            <p class="text-2xl font-bold" id="stat-organic">0</p>
                         </div>
                     </div>
                 </div>
@@ -412,19 +408,33 @@
                 <!-- Products Grid -->
                 <div class="flex-1">
                     <!-- View Toggle -->
-                    <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
                         <h3 class="text-xl font-bold text-gray-900">Products</h3>
-                        <div class="bg-gray-100 rounded-xl p-1 flex gap-1">
-                            <button id="grid-view-btn" class="p-2.5 bg-white text-green-600 rounded-lg shadow-sm transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                                </svg>
-                            </button>
-                            <button id="list-view-btn" class="p-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-all">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                                </svg>
-                            </button>
+                        <div class="flex items-center gap-3">
+                            <!-- Sorting Dropdown -->
+                            <select id="sort-filter" class="custom-select px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all font-medium text-sm shadow-sm">
+                                <option value="default">Default Order</option>
+                                <option value="name-asc">Name (A-Z)</option>
+                                <option value="name-desc">Name (Z-A)</option>
+                                <option value="company-asc">Company (A-Z)</option>
+                                <option value="company-desc">Company (Z-A)</option>
+                                <option value="price-asc">Price (Low to High)</option>
+                                <option value="price-desc">Price (High to Low)</option>
+                            </select>
+                            
+                            <!-- View Mode Toggle -->
+                            <div class="bg-gray-100 rounded-xl p-1 flex gap-1">
+                                <button id="grid-view-btn" class="p-2.5 bg-white text-green-600 rounded-lg shadow-sm transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                                    </svg>
+                                </button>
+                                <button id="list-view-btn" class="p-2.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -443,6 +453,16 @@
                     <!-- Products Container -->
                     <div id="products-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         <!-- Products will be inserted here -->
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="pagination-container" class="mt-10 flex flex-col items-center gap-6">
+                        <div class="flex items-center gap-2 flex-wrap justify-center">
+                            <!-- Pagination buttons will be inserted here -->
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">
+                            Showing <span id="page-start">0</span> to <span id="page-end">0</span> of <span id="page-total">0</span> products
+                        </div>
                     </div>
                 </div>
             </div>
@@ -484,6 +504,9 @@
         let allProducts = [];
         let filteredProducts = [];
         let currentViewMode = 'grid';
+        let currentPage = 1;
+        let productsPerPage = 51;
+        let currentSort = 'default'; // default, name-asc, name-desc, company-asc, company-desc
         const EXCEL_FILE_URL = './agrihubdb.xlsx';
 
         // Wait for page to load
@@ -506,6 +529,13 @@
             });
             document.getElementById('list-view-btn').addEventListener('click', function() {
                 setViewMode('list');
+            });
+            
+            // Sorting
+            document.getElementById('sort-filter').addEventListener('change', function() {
+                currentSort = this.value;
+                currentPage = 1; // Reset to first page when sorting
+                applyFilters();
             });
             
             // Universal search with debounce
@@ -685,10 +715,9 @@
             select.value = valueExists ? currentValue : 'all';
         }
 
-        function updateStats() {
-            document.getElementById('stat-total').textContent = allProducts.length;
-            document.getElementById('stat-companies').textContent = new Set(allProducts.map(p => p.company)).size;
-            document.getElementById('stat-organic').textContent = allProducts.filter(p => p.organic).length;
+        function updateStats(products = allProducts) {
+            document.getElementById('stat-total').textContent = products.length;
+            document.getElementById('stat-companies').textContent = new Set(products.map(p => p.company)).size;
         }
 
         function applyFilters() {
@@ -702,6 +731,9 @@
             const sidebarTypeFilter = document.getElementById('sidebar-type-filter').value;
             const seasonFilter = document.getElementById('season-filter').value;
             const organicFilter = document.getElementById('organic-filter').checked;
+
+            // Reset to page 1 when filters change
+            currentPage = 1;
 
             // Step 1: Filter products based on current selections
             filteredProducts = allProducts.filter(product => {
@@ -730,27 +762,181 @@
                        matchesSeason && matchesOrganic;
             });
 
-            // Step 2: Update filter options based on filtered results
+            // Step 2: Apply sorting
+            applySorting();
+
+            // Step 3: Update filter options based on filtered results
             // This creates the interconnected behavior
             updateFilterOptions(filteredProducts);
 
-            // Step 3: Display filtered products
+            // Step 4: Update stats with filtered products
+            updateStats(filteredProducts);
+
+            // Step 5: Display filtered products
             displayProducts();
         }
 
-        function clearFilters() {
-            console.log('Clearing filters...');
-            document.getElementById('universal-search').value = '';
-            document.getElementById('product-name-filter').value = 'all';
-            document.getElementById('brand-name-filter').value = 'all';
-            document.getElementById('crops-filter').value = 'all';
-            document.getElementById('crop-filter').value = 'all';
-            document.getElementById('company-filter').value = 'all';
-            document.getElementById('type-filter').value = 'all';
-            document.getElementById('sidebar-type-filter').value = 'all';
-            document.getElementById('season-filter').value = 'all';
-            document.getElementById('organic-filter').checked = false;
-            applyFilters();
+        function applySorting() {
+            switch(currentSort) {
+                case 'name-asc':
+                    filteredProducts.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'name-desc':
+                    filteredProducts.sort((a, b) => b.name.localeCompare(a.name));
+                    break;
+                case 'company-asc':
+                    filteredProducts.sort((a, b) => a.company.localeCompare(b.company));
+                    break;
+                case 'company-desc':
+                    filteredProducts.sort((a, b) => b.company.localeCompare(a.company));
+                    break;
+                case 'price-asc':
+                    filteredProducts.sort((a, b) => {
+                        const priceA = extractPrice(a.priceRange);
+                        const priceB = extractPrice(b.priceRange);
+                        return priceA - priceB;
+                    });
+                    break;
+                case 'price-desc':
+                    filteredProducts.sort((a, b) => {
+                        const priceA = extractPrice(a.priceRange);
+                        const priceB = extractPrice(b.priceRange);
+                        return priceB - priceA;
+                    });
+                    break;
+                default:
+                    // Keep original order
+                    break;
+            }
+        }
+
+        function extractPrice(priceRange) {
+            if (!priceRange || priceRange === 'Not Available') return 0;
+            // Extract first number from price range
+            const match = priceRange.match(/\d+/);
+            return match ? parseInt(match[0]) : 0;
+        }
+
+        function displayProducts() {
+            const container = document.getElementById('products-container');
+            const noResults = document.getElementById('no-results');
+            const paginationContainer = document.getElementById('pagination-container');
+            
+            document.getElementById('filtered-count').textContent = filteredProducts.length;
+            document.getElementById('total-count').textContent = allProducts.length;
+
+            if (filteredProducts.length === 0) {
+                container.innerHTML = '';
+                noResults.classList.remove('hidden');
+                paginationContainer.classList.add('hidden');
+                return;
+            }
+
+            noResults.classList.add('hidden');
+            
+            // Calculate pagination
+            const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+            const startIndex = (currentPage - 1) * productsPerPage;
+            const endIndex = Math.min(startIndex + productsPerPage, filteredProducts.length);
+            const productsToShow = filteredProducts.slice(startIndex, endIndex);
+            
+            // Display products for current page
+            container.innerHTML = productsToShow.map(product => createProductCard(product)).join('');
+            
+            // Update pagination info
+            document.getElementById('page-start').textContent = startIndex + 1;
+            document.getElementById('page-end').textContent = endIndex;
+            document.getElementById('page-total').textContent = filteredProducts.length;
+            
+            // Show/hide pagination
+            if (totalPages > 1) {
+                paginationContainer.classList.remove('hidden');
+                renderPagination(totalPages);
+            } else {
+                paginationContainer.classList.add('hidden');
+            }
+            
+            // Scroll to top of products
+            document.getElementById('products-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function renderPagination(totalPages) {
+            const paginationContainer = document.getElementById('pagination-container').querySelector('div');
+            let paginationHTML = '';
+            
+            // Previous button
+            paginationHTML += `
+                <button onclick="changePage(${currentPage - 1})" 
+                        ${currentPage === 1 ? 'disabled' : ''} 
+                        class="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+            `;
+            
+            // Page numbers with smart truncation
+            const maxVisiblePages = 7;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // First page
+            if (startPage > 1) {
+                paginationHTML += `
+                    <button onclick="changePage(1)" 
+                            class="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all font-medium text-sm">
+                        1
+                    </button>
+                `;
+                if (startPage > 2) {
+                    paginationHTML += `<span class="px-2 text-gray-500">...</span>`;
+                }
+            }
+            
+            // Page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHTML += `
+                    <button onclick="changePage(${i})" 
+                            class="px-4 py-2 ${i === currentPage ? 'bg-green-600 text-white' : 'bg-white border border-gray-200 hover:bg-gray-50'} rounded-lg transition-all font-medium text-sm">
+                        ${i}
+                    </button>
+                `;
+            }
+            
+            // Last page
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHTML += `<span class="px-2 text-gray-500">...</span>`;
+                }
+                paginationHTML += `
+                    <button onclick="changePage(${totalPages})" 
+                            class="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-all font-medium text-sm">
+                        ${totalPages}
+                    </button>
+                `;
+            }
+            
+            // Next button
+            paginationHTML += `
+                <button onclick="changePage(${currentPage + 1})" 
+                        ${currentPage === totalPages ? 'disabled' : ''} 
+                        class="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
+            `;
+            
+            paginationContainer.innerHTML = paginationHTML;
+        }
+
+        function changePage(page) {
+            currentPage = page;
+            displayProducts();
         }
 
         function setViewMode(mode) {
@@ -773,21 +959,22 @@
             displayProducts();
         }
 
-        function displayProducts() {
-            const container = document.getElementById('products-container');
-            const noResults = document.getElementById('no-results');
-            
-            document.getElementById('filtered-count').textContent = filteredProducts.length;
-            document.getElementById('total-count').textContent = allProducts.length;
-
-            if (filteredProducts.length === 0) {
-                container.innerHTML = '';
-                noResults.classList.remove('hidden');
-                return;
-            }
-
-            noResults.classList.add('hidden');
-            container.innerHTML = filteredProducts.map(product => createProductCard(product)).join('');
+        function clearFilters() {
+            console.log('Clearing filters...');
+            document.getElementById('universal-search').value = '';
+            document.getElementById('product-name-filter').value = 'all';
+            document.getElementById('brand-name-filter').value = 'all';
+            document.getElementById('crops-filter').value = 'all';
+            document.getElementById('crop-filter').value = 'all';
+            document.getElementById('company-filter').value = 'all';
+            document.getElementById('type-filter').value = 'all';
+            document.getElementById('sidebar-type-filter').value = 'all';
+            document.getElementById('season-filter').value = 'all';
+            document.getElementById('organic-filter').checked = false;
+            document.getElementById('sort-filter').value = 'default';
+            currentSort = 'default';
+            currentPage = 1;
+            applyFilters();
         }
 
         function createProductCard(product) {
