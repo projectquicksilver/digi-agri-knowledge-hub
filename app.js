@@ -7,6 +7,9 @@ let productsPerPage = 51;
 let currentSort = 'default'; // default, name-asc, name-desc, company-asc, company-desc
 const EXCEL_FILE_URL = './agrihubdb.xlsx';
 
+// Cache for extracted images
+const imageCache = new Map();
+
 // Wait for page to load
 window.addEventListener('load', function() {
     console.log('Page loaded, initializing...');
@@ -68,6 +71,129 @@ function initializeApp() {
     
     // Load data
     loadExcelData();
+}
+
+// Image extraction functions
+function getImageUrl(url) {
+    // If it's already a direct image URL, return it
+    if (url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+        return url;
+    }
+    
+    // For Bayer CropScience URLs, we'll try to extract the image
+    if (url.includes('bayer.') || url.includes('cropscience')) {
+        // Check cache first
+        if (imageCache.has(url)) {
+            return imageCache.get(url);
+        }
+        
+        // Return placeholder initially, we'll fetch the real image
+        fetchProductImage(url);
+        return 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\' viewBox=\'0 0 200 200\'%3E%3Crect fill=\'%23f0fdf4\' width=\'200\' height=\'200\'/%3E%3C/svg%3E';
+    }
+    
+    return url;
+}
+
+async function fetchProductImage(pageUrl) {
+    try {
+        // Use a CORS proxy to fetch the page
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(pageUrl)}`;
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        const html = data.contents;
+        
+        // Create a temporary DOM to parse the HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Try different selectors to find product images
+        const selectors = [
+            'meta[property="og:image"]',
+            'img.product-image',
+            'img[alt*="product"]',
+            '.product-detail img',
+            'img[src*="product"]',
+            'img'
+        ];
+        
+        let imageUrl = null;
+        
+        for (const selector of selectors) {
+            const element = doc.querySelector(selector);
+            if (element) {
+                if (selector.startsWith('meta')) {
+                    imageUrl = element.getAttribute('content');
+                } else {
+                    imageUrl = element.getAttribute('src');
+                }
+                
+                if (imageUrl) {
+                    // Make URL absolute if relative
+                    if (imageUrl.startsWith('/')) {
+                        const urlObj = new URL(pageUrl);
+                        imageUrl = urlObj.origin + imageUrl;
+                    } else if (!imageUrl.startsWith('http')) {
+                        const urlObj = new URL(pageUrl);
+                        imageUrl = urlObj.origin + '/' + imageUrl;
+                    }
+                    
+                    // Cache the result
+                    imageCache.set(pageUrl, imageUrl);
+                    
+                    // Update all images with this URL
+                    updateProductImages(pageUrl, imageUrl);
+                    break;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching product image:', error);
+    }
+}
+
+function updateProductImages(originalUrl, newImageUrl) {
+    // Find all images with this data-original-url and update them
+    const images = document.querySelectorAll(`img[data-original-url="${originalUrl}"]`);
+    images.forEach(img => {
+        img.src = newImageUrl;
+        // Hide loader
+        const loaderId = img.id + '-loader';
+        const loader = document.getElementById(loaderId);
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    });
+}
+
+function handleImageLoad(img) {
+    // Hide loader when image loads
+    const loaderId = img.id + '-loader';
+    const loader = document.getElementById(loaderId);
+    if (loader) {
+        loader.style.display = 'none';
+    }
+}
+
+function handleImageError(img) {
+    const originalUrl = img.getAttribute('data-original-url');
+    
+    // Hide loader
+    const loaderId = img.id + '-loader';
+    const loader = document.getElementById(loaderId);
+    if (loader) {
+        loader.style.display = 'none';
+    }
+    
+    // If we have a webpage URL and haven't tried extracting yet, try that
+    if (originalUrl && !originalUrl.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i) && !imageCache.has(originalUrl)) {
+        // Try to fetch the page and extract image
+        fetchProductImage(originalUrl);
+    }
+    
+    // Set placeholder
+    img.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\' viewBox=\'0 0 200 200\'%3E%3Crect fill=\'%23f0fdf4\' width=\'200\' height=\'200\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'14\' fill=\'%239ca3af\'%3ENo Image%3C/text%3E%3C/svg%3E';
+    img.classList.add('opacity-50');
 }
 
 async function loadExcelData() {
@@ -457,15 +583,22 @@ function clearFilters() {
 
 function createProductCard(product) {
     const isListView = currentViewMode === 'list';
+    const imageId = `product-img-${product.id}`;
     
     return `
         <div class="product-card bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden ${isListView ? 'flex flex-col sm:flex-row' : ''} fade-in" onclick="openProductModal(${product.id})">
             <div class="${isListView ? 'w-full sm:w-48 h-48 sm:h-auto flex-shrink-0' : 'h-48'} bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center overflow-hidden relative">
                 ${product.imageLink && product.imageLink !== 'Not Available' && product.imageLink.startsWith('http') ? 
-                    `<img src="${product.imageLink}" 
+                    `<img id="${imageId}" 
+                          src="${getImageUrl(product.imageLink)}" 
+                          data-original-url="${product.imageLink}"
                           alt="${product.name}" 
                           class="w-full h-full object-cover"
-                          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'200\\' height=\\'200\\' viewBox=\\'0 0 200 200\\'%3E%3Crect fill=\\'%23f0fdf4\\' width=\\'200\\' height=\\'200\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'sans-serif\\' font-size=\\'14\\' fill=\\'%239ca3af\\'%3ENo Image%3C/text%3E%3C/svg%3E'">` 
+                          onerror="handleImageError(this)"
+                          onload="handleImageLoad(this)">
+                     <div id="${imageId}-loader" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+                        <div class="spinner-small"></div>
+                     </div>` 
                     : 
                     `<div class="text-gray-400 text-sm flex flex-col items-center gap-2">
                         <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,6 +642,7 @@ function openProductModal(productId) {
 
     const modal = document.getElementById('product-modal');
     const overlay = document.getElementById('product-modal-overlay');
+    const modalImageId = `modal-img-${product.id}`;
 
     modal.innerHTML = `
         <button onclick="closeProductModal()" class="absolute top-4 right-4 z-10 p-2.5 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-all">
@@ -519,10 +653,16 @@ function openProductModal(productId) {
 
         <div class="relative h-80 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center overflow-hidden">
             ${product.imageLink && product.imageLink !== 'Not Available' && product.imageLink.startsWith('http') ? 
-                `<img src="${product.imageLink}" 
+                `<img id="${modalImageId}" 
+                      src="${getImageUrl(product.imageLink)}" 
+                      data-original-url="${product.imageLink}"
                       alt="${product.name}" 
                       class="w-full h-full object-cover"
-                      onerror="this.style.display='none'; this.parentElement.innerHTML += '<div class=\\'flex flex-col items-center gap-4 text-gray-400\\'><svg class=\\'w-20 h-20\\' fill=\\'none\\' stroke=\\'currentColor\\' viewBox=\\'0 0 24 24\\'><path stroke-linecap=\\'round\\' stroke-linejoin=\\'round\\' stroke-width=\\'2\\' d=\\'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z\\'></path></svg><span class=\\'text-lg font-semibold\\'>No Image Available</span></div>';">
+                      onerror="handleImageError(this)"
+                      onload="handleImageLoad(this)">
+                 <div id="${modalImageId}-loader" class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
+                    <div class="spinner"></div>
+                 </div>
                  <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent);"></div>
                  <div style="position: absolute; bottom: 24px; left: 24px; right: 24px;">
                     <h2 class="text-3xl font-bold text-white mb-2" style="text-shadow: 0 2px 10px rgba(0,0,0,0.5);">${product.name}</h2>
@@ -636,7 +776,11 @@ function openProductModal(productId) {
                 </div>` : ''}
 
             <div class="flex gap-3 pt-6 border-t border-gray-200">
-                <button onclick="closeProductModal()" class="w-full px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-bold text-sm shadow-lg">
+                ${product.sourceUrl && product.sourceUrl !== 'Not Available' ? 
+                    `<a href="${product.sourceUrl}" target="_blank" class="flex-1 px-5 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold text-sm shadow-lg text-center">
+                        Visit Product Page
+                    </a>` : ''}
+                <button onclick="closeProductModal()" class="flex-1 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-bold text-sm shadow-lg">
                     Close
                 </button>
             </div>
